@@ -1,0 +1,42 @@
+{
+   "pg" : {
+      "pghost" : "localhost",
+      "pgdb" : "simpuswserverkragan2",
+      "pgport" : "5432",
+      "pguser" : "5K/cnRpvSZGO31kC27Zksk7xdbvw12NX1Y6koaXlXn2UtDg",
+      "pgpasswd" : "Fc21y6jySKDMAS3lqe0DoPWs4zAKV1+xpd21x0b+Z40nkHXIEHU3Ke8iOBpvtC+X5fY4SOMa7E3ZY5",
+      "port" : "5432"
+   },
+   "serial" : "tes serial",
+   "bpjs" : {
+      "consid" : "8aM+LvL6WlmwzApwP6hhhuqGg",
+      "key" : "Pukp3Lfzs73zeJ689KZwg4Fh/uUOQ79XhjoV2ZOteYySS4EbR3wwN",
+      "userid" : "11341202",
+      "passwd" : "4YekwG43dmM6UfiLj8KsfPYL0T7qiwBK2o30rXXCgEx4mBCosSYsmRGxTIWZ6hHlnhiuodOTgiZ",
+      "base_uri" : "http://api.bpjs-kesehatan.go.id/pcare-rest"
+   },
+   "pulang" : [
+      "DIPULANGKAN",
+      "DIRUJUK",
+      "PULANG PAKSA",
+      "PINDAH RS ATAS PERMINTAAN",
+      "MENINGGAL"
+   ],
+   "datang" : [ "SENDIRI", "DENGAN RUJUKAN" ],
+   "instalasi" : [ "RAWAT JALAN", "RAWAT INAP", "GAWAT DARURAT" ],
+   "sebabdatang" : [ "TRAUMA", "NON TRAUMA" ],
+   "trauma" : [
+      "KEC. LALU LINTAS",
+      "KEC. KERJA",
+      "KEC. RUMAH TANGGA",
+      "PENGANIAYAAN",
+      "INTOKSIKASI",
+      "GIGITAN"
+   ],
+   "puskesmas" : "P3317120102",
+   "display" : {
+      "host" : "localhost",
+      "port" : "5544"
+   },
+   "uridinkes" : "http://localhost:8187"
+}

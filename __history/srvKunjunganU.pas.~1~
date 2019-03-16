@@ -1,0 +1,177 @@
+unit srvKunjunganU;
+
+interface
+   uses Dialogs, Classes, srvCommonsU, System.SysUtils, System.StrUtils;
+type
+
+  srvKunjungan = class(srvCommon)
+    private
+    function ambilJsonPostKunjungan(idxstr : string) : string;
+    public
+    aScript : TStringList;
+    function postKunjungan(idxstr : string): Boolean;
+    function deleteKunjungan(idxstr : string): Boolean;
+    constructor Create;
+    destructor destroy;
+    procedure masukkanpostKunjungan;
+//    property Uri : string;
+  end;
+
+
+implementation
+     uses SynCommons, mORMot, synautil;
+{ srvKunjungan }
+
+function srvKunjungan.ambilJsonPostKunjungan(idxstr: string): string;
+var sql0, sql1, tglStr, tanggalMasukStr, tanggalPulangStr : string;
+    V1 : Variant;
+begin
+parameter_bridging('kunjungan', 'post');
+
+V1 := _Json(FormatJson);
+
+Result := '';
+sql0 := 'select * from simpus.pasien_kunjungan where idxstr = %s limit 1';
+sql1 := Format(sql0, [QuotedStr(idxstr)]);
+fdQuery.Close;
+fdQuery.SQL.Clear;
+fdQuery.SQL.Add(sql1);
+fdQuery.Active := true;
+
+if not fdQuery.IsEmpty then
+begin
+
+   DateTimeToString(tglStr, 'yyyy-MM-dd', fdQuery.FieldByName('tanggal').AsDateTime);
+   DateTimeToString(tanggalMasukStr, 'yyyy-MM-dd''T''hh:mm:ss', fdQuery.FieldByName('tanggal_masuk').AsDateTime);
+   DateTimeToString(tanggalPulangStr, 'yyyy-MM-dd''T''hh:mm:ss', fdQuery.FieldByName('tanggal_pulang').AsDateTime);
+
+
+
+
+//ShowMessage(VariantSaveJSON(V1));
+  V1.idxstr := idxstr;
+  V1.puskesmas := fdQuery.FieldByName('puskesmas').AsInteger;
+  V1.tanggal := tglStr;
+  V1.nomor := fdQuery.FieldByName('nomor').AsInteger;
+  V1.idPasien := fdQuery.FieldByName('id_pasien').AsString;
+  V1.biaya := fdQuery.FieldByName('biaya').AsString;
+  V1.datangRujukan := fdQuery.FieldByName('datang_rujukan').AsString;
+  V1.datangSebab := fdQuery.FieldByName('datang_sebab').AsString;
+  V1.datangSebabKet := fdQuery.FieldByName('datang_sebab_ket').AsString;
+  V1.poliTujuan := fdQuery.FieldByName('poli_tujuan').AsString;
+  V1.tanggalMasuk := tanggalMasukStr;
+  V1.lama := fdQuery.FieldByName('lama').AsInteger;
+  V1.instalasi := fdQuery.FieldByName('instalasi').AsString;
+  V1.sdhPulang := fdQuery.FieldByName('sdh_pulang').AsInteger;
+  V1.sdhDilayani := fdQuery.FieldByName('sdh_dilayani').AsInteger;
+  V1.tanggalPulang := tanggalPulangStr;
+  V1.periksaFisik := fdQuery.FieldByName('periksa_fisik').AsInteger;
+  V1.jenisKunjungan := fdQuery.FieldByName('jenis_kunjungan').AsString;
+  V1.farmasiOk := fdQuery.FieldByName('farmasi_ok').AsInteger;
+  V1.labOk := fdQuery.FieldByName('lab_ok').AsInteger;
+  V1.bthLab := fdQuery.FieldByName('bth_lab').AsInteger;
+  V1.bpjsKunjungan := fdQuery.FieldByName('bpjs_kunjungan').AsString;
+  V1.bpjsUrut := fdQuery.FieldByName('bpjs_urut').AsInteger;
+  V1.lengkap := fdQuery.FieldByName('lengkap').AsInteger;
+  V1.pulangSebab := fdQuery.FieldByName('pulang_sebab').AsString;
+  V1.antri := fdQuery.FieldByName('antri').AsInteger;
+  if not fdQuery.FieldByName('andro').IsNull then
+         V1.andro := fdQuery.FieldByName('andro').AsString;
+  V1.luarWilayah := fdQuery.FieldByName('luar_wilayah').AsInteger;
+  fdQuery.Close;
+   Result := VariantSaveJSON(V1);
+end else fdQuery.Close;
+end;
+
+constructor srvKunjungan.Create;
+begin
+  inherited Create;
+  aScript := TStringList.Create;
+end;
+
+function srvKunjungan.deleteKunjungan(idxstr: string): Boolean;
+begin
+Result := False;
+parameter_bridging('kunjungan', 'delete');
+
+Uri := ReplaceStr(Uri, '{idxstr}', idxstr);
+Result:= httpDelete(Uri);
+  if Result then jika_berhasil('simpus.pasien_kunjungan', idxstr) else
+         jika_gagal('delete', Uri, FormatJson, 'simpus.pasien_kunjungan', idxstr);
+
+end;
+
+destructor srvKunjungan.destroy;
+begin
+aScript.Free;
+inherited;
+end;
+
+function srvKunjungan.postKunjungan(idxstr : string): Boolean;
+var
+    mStream : TMemoryStream;
+    js : string;
+
+begin
+Result := False;
+
+js := ambilJsonPostKunjungan(idxstr);
+if Length(js) > 10 then
+begin
+mStream := TMemoryStream.Create;
+WriteStrToStream(mStream, js);
+
+//Uri := ReplaceStr(Uri, '{puskesmas}', puskesmas);
+Result:= httpPost(Uri, mStream);
+mStream.Free;
+  if Result then jika_berhasil('simpus.pasien_kunjungan', idxstr) else
+         jika_gagal('post', Uri, js, 'simpus.pasien_kunjungan', idxstr);
+
+end;
+end;
+
+
+
+procedure srvKunjungan.masukkanpostKunjungan;
+var dataResp, dataList : Variant;
+    i : Integer;
+    tSl : TStringList;
+    sqlx0, sqlx1 : string;
+    sqlDel0, sql0, sql1 : string;
+    dId, dPuskesmas, dJml, dTgl : string;
+    poliSakit : Boolean;
+begin
+//       ShowMessage('awal masukkan get');
+
+   sqlDel0 := 'delete from simpus.tt where id = 0;';
+//   sql0 := 'insert into simpus.tt(id, puskesmas, jml, tanggal_ubah) values(%s, %s, %s, %s);';
+   tsL := TStringList.Create;
+   tSl.Add(sqlDel0);
+   try
+   dataResp := _jsonFast(tsResponse.Text);
+   sql1 := jsonToSql('simpus.tt', dataResp);
+   sql1 := ReplaceStr(sql1, 'tanggalUbah', 'tanggal_ubah');
+   tSl.Add(sql1);
+// ShowMessage(tsResponse.Text);
+
+ {
+   for I := 0 to dataResp._count - 1 do
+     begin
+       dBiaya := dataResp.Value(i).biaya;
+       dIdRpt := dataResp.Value(i).idRpt;
+//       ShowMessage('BooltoStr (nonSpesialis, True)');
+
+       sql1 := Format(sql0, [QuotedStr(dBiaya), QuotedStr(dIdRpt)]);
+       tSl.Add(sql1);
+//       showMessage(sqlDel1);
+//       showMessage(sql1);
+     end;
+  }
+   finally
+     aScript.Assign(tSl);
+     jalankanScript(tSl);
+     FreeAndNil(tSl);
+   end;
+end;
+
+end.

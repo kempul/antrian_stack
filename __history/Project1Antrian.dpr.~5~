@@ -1,0 +1,16 @@
+program Project1Antrian;
+
+uses
+  Vcl.Forms,
+  Unit1Antrian in 'Unit1Antrian.pas' {Form1},
+  menuU in 'menuU.pas' {Form2};
+
+{$R *.res}
+
+begin
+  Application.Initialize;
+  Application.MainFormOnTaskbar := True;
+  Application.CreateForm(TForm1, Form1);
+  Application.CreateForm(TForm2, Form2);
+  Application.Run;
+end.

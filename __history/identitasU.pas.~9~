@@ -1,0 +1,56 @@
+unit identitasU;
+
+interface
+
+uses
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
+  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, JvExControls, JvButton,
+  JvTransparentButton, Vcl.StdCtrls, Vcl.ExtCtrls, Vcl.Buttons;
+
+type
+  TForm1_Identitas = class(TForm)
+    panel2: TPanel;
+    txt1: TStaticText;
+    panel3: TPanel;
+    btnBpjs: TSpeedButton;
+    btnKartuBerobat: TSpeedButton;
+    btnKtp: TSpeedButton;
+    procedure FormResize(Sender: TObject);
+    procedure FormShow(Sender: TObject);
+  private
+    { Private declarations }
+    var teks : string;
+    procedure awal;
+  public
+    { Public declarations }
+  end;
+
+var
+  Form1_Identitas: TForm1_Identitas;
+
+implementation
+
+{$R *.dfm}
+     uses System.StrUtils, paddingU;
+
+procedure TForm1_Identitas.awal;
+var a0, kartuBerobat, ktp, bpjs : string;
+    i : Integer;
+begin
+btnKartuBerobat.Caption := RightPad('Kartu Berobat', ' ', 100);
+btnKtp.Caption := RightPad('KTP', ' ', 100);
+btnBpjs.Caption := RightPad('Katu BPJS / Askes', ' ', 100);
+end;
+
+procedure TForm1_Identitas.FormResize(Sender: TObject);
+begin
+panel2.Left := (ClientWidth - panel2.Width) div 2;
+panel2.Top := (ClientHeight - panel2.Height) div 2;
+end;
+
+procedure TForm1_Identitas.FormShow(Sender: TObject);
+begin
+awal;
+end;
+
+end.

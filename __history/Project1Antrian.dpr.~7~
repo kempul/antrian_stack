@@ -1,0 +1,18 @@
+program Project1Antrian;
+
+uses
+  Vcl.Forms,
+  Unit1Antrian in 'Unit1Antrian.pas' {Form1},
+  menuU in 'menuU.pas' {Form1_pembuka},
+  identitasU in 'identitasU.pas' {Form1_Identitas};
+
+{$R *.res}
+
+begin
+  Application.Initialize;
+  Application.MainFormOnTaskbar := True;
+  Application.CreateForm(TForm1, Form1);
+  Application.CreateForm(TForm1_pembuka, Form1_pembuka);
+  Application.CreateForm(TForm1_Identitas, Form1_Identitas);
+  Application.Run;
+end.

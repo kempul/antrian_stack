@@ -1,0 +1,411 @@
+unit srvAntriU;
+
+interface
+   uses Dialogs, Classes, srvCommonsU, System.SysUtils, System.StrUtils;
+type
+
+  srvAntri = class(srvCommon)
+    private
+//    function jsonToSql(table : string = 'simpus.m_instalasi'; json : string = ''; update : Boolean = False; pkey : string = '') : string;
+    function ambilJsonAntriPost(puskesmas : Integer; tanggal : TDateTime) : string;
+    function ambilJsonAntriTopikPost(puskesmas : integer; tanggal : TDateTime) : string;
+    procedure masukkanGetAntriAndro(puskesmas : integer; tanggal : TDateTime);
+    procedure masukkanPostAntri(id : string);
+    procedure masukkanPostAntriFcm(id : string);
+
+    public
+    aScript : TStringList;
+    constructor Create;
+    destructor destroy;
+    function ambilJsonAntriFcmPost(puskesmas : integer; tanggal : TDateTime) : string;
+    function getAntriAndro(puskesmas : integer; tanggal : TDateTime) : Boolean;
+    function postAntri(puskesmas : Integer; tanggal : TDateTime) : Boolean;
+    function postAntriFcm(puskesmas : integer; tanggal : TDateTime; logOnly : Boolean) : Boolean;
+    function postAntriTopik(puskesmas : Integer; tanggal: TDateTime; logOnly : Boolean) : Boolean;
+
+//    property Uri : string;
+  end;
+
+
+implementation
+     uses SynCommons, mORMot, synautil;
+{ srvAntriAndro }
+
+function srvAntri.ambilJsonAntriFcmPost(puskesmas : integer; tanggal : TDateTime): string;
+var sql0, sql1, tanggalStr : string;
+    V0, V1, V2 : Variant;
+begin
+DateTimeToString(tanggalStr, 'yyyy-MM-dd', tanggal);
+
+parameter_bridging('antri fcm', 'post');
+V0 := _Arr([]);
+V2 := _Json(FormatJson);
+
+Result := '';
+
+sql0 := 'select * from andro.antri_fcm_view where puskesmas = %s and tanggal = %s and token is not null and fcm = false;';
+sql1 := Format(sql0, [IntToStr(puskesmas), QuotedStr(tanggalStr)]);
+fdQuery.Close;
+fdQuery.SQL.Clear;
+fdQuery.SQL.Add(sql1);
+fdQuery.Active := true;
+if not fdQuery.IsEmpty then
+  begin
+    fdQuery.First;
+    while not fdQuery.Eof do
+    begin
+      //ShowMessage(VariantSaveJSON(V1));
+      VarClear(V1);
+      V1 := V2;
+      V1.id := fdQuery.FieldByName('id').AsString;
+      V1.nik := fdQuery.FieldByName('nik').AsString;
+      V1.token := fdQuery.FieldByName('token').AsString;
+      V1.nomor := fdQuery.FieldByName('nomor').AsInteger;
+
+      V0.add(V1);
+      fdQuery.Next;
+    end;
+
+  fdQuery.Close;
+
+   Result := VariantSaveJSON(V0);
+end else fdQuery.Close;
+end;
+
+function srvAntri.ambilJsonAntriPost(puskesmas : Integer; tanggal : TDateTime): string;
+var sql0, sql1, tanggalStr : string;
+    V0,V1, V2 : Variant;
+begin
+DateTimeToString(tanggalStr, 'yyyy-MM-dd', tanggal);
+
+parameter_bridging('antri', 'post');
+V0 := _Arr([]);
+V2 := _Json(FormatJson);
+
+Result := '';
+
+sql0 := 'select * from simpus.antri where puskesmas = %s and tanggal = %s and dari_server is null;';
+sql1 := Format(sql0, [intToStr(puskesmas), QuotedStr(tanggalStr)]);
+fdQuery.Close;
+fdQuery.SQL.Clear;
+fdQuery.SQL.Add(sql1);
+fdQuery.Active := true;
+//ShowMessage('tes');
+if not fdQuery.IsEmpty then
+begin
+//  ShowMessage(VariantSaveJSON(V2));
+  fdQuery.First;
+  while not fdQuery.Eof do
+  begin
+    VarClear(V1);
+    V1 := V2;
+    V1.id := fdQuery.FieldByName('id').AsString;
+    V1.puskesmas := fdQuery.FieldByName('puskesmas').AsInteger;
+    V1.tanggal := tanggalStr;
+    V1.nomor := fdQuery.FieldByName('nomor').AsInteger;
+    V1.didaftar := fdQuery.FieldByName('didaftar').AsInteger;
+
+    if not fdQuery.FieldByName('daftar').IsNull then
+           V1.daftar := fdQuery.FieldByName('daftar').AsString;
+
+    if not fdQuery.FieldByName('andro').IsNull then
+           V1.andro := fdQuery.FieldByName('andro').AsString;
+
+    if not fdQuery.FieldByName('token').IsNull then
+           V1.token := fdQuery.FieldByName('token').AsString;
+
+    if not fdQuery.FieldByName('dari_server').IsNull then
+           V1.dariServer := fdQuery.FieldByName('dari_server').AsString;
+
+    V0.Add(V1);
+    fdQuery.Next;
+  end;
+
+  fdQuery.Close;
+
+   Result := VariantSaveJSON(V0);
+end else fdQuery.Close;
+end;
+
+function srvAntri.ambilJsonAntriTopikPost(puskesmas : Integer; tanggal : TDateTime): string;
+var sql0, sql1, tanggalStr : string;
+    V1 : Variant;
+begin
+DateTimeToString(tanggalStr, 'YYYY-MM-DD', tanggal);
+parameter_bridging('antri fcm topik', 'post');
+
+V1 := _Json(FormatJson);
+
+Result := '';
+
+sql0 := 'select * from simpus.antri_view where puskesmas = %s and tanggal = %s limit 1;';
+sql1 := Format(sql0, [ IntToStr(puskesmas), QuotedStr(tanggalStr)]);
+fdQuery.Close;
+fdQuery.SQL.Clear;
+fdQuery.SQL.Add(sql1);
+fdQuery.Active := true;
+if not fdQuery.IsEmpty then
+begin
+//ShowMessage(VariantSaveJSON(V1));
+  V1.id := fdQuery.FieldByName('id').AsString;
+  V1.puskesmas := fdQuery.FieldByName('puskesmas').AsInteger;
+  V1.tanggal := tanggalStr;
+  V1.jumlah := fdQuery.FieldByName('jumlah').AsInteger;
+  V1.didaftar := fdQuery.FieldByName('didaftar').AsInteger;
+
+  fdQuery.Close;
+
+   Result := VariantSaveJSON(V1);
+end else fdQuery.Close;
+end;
+
+constructor srvAntri.Create;
+begin
+  inherited Create;
+  aScript := TStringList.Create;
+end;
+
+destructor srvAntri.destroy;
+begin
+aScript.Free;
+inherited;
+end;
+
+function srvAntri.getAntriAndro(puskesmas : integer; tanggal : TDateTime): Boolean;
+var sql0, sql1, strTgl : string;
+begin
+parameter_bridging('antri andro', 'get');
+
+DateTimeToString(strTgl, 'YYYY-MM-DD', tanggal);
+Result := False;
+//ShowMessage(uri);
+Uri := ReplaceStr(Uri, '{puskesmas}', IntToStr(puskesmas));
+Uri := ReplaceStr(Uri, '{tanggal}', strTgl);
+
+//ShowMessage(uri);
+
+Result:= httpGet(uri);
+
+if Result then masukkangetAntriAndro(puskesmas, tanggal);
+
+end;
+
+
+
+procedure srvAntri.masukkangetAntriAndro(puskesmas : integer; tanggal : TDateTime);
+var dataResp, dataList : Variant;
+    i : Integer;
+    tSl : TStringList;
+    sqlx0, sqlx1 : string;
+    sql0, sql1 : string;
+    dId, dNik, dToken, strTgl : string;
+    adlAktif : Boolean;
+begin
+//       ShowMessage('awal masukkan get');
+
+   sql0 := 'insert into andro.antri_andro(id, puskesmas, tanggal, nik, token) ' +
+            'values(%s, %s, %s, %s, %s) on conflict (id) do nothing;';
+   tsL := TStringList.Create;
+   DateTimeToString(strTgl, 'YYYY-MM-DD', tanggal);
+//   ShowMessage(tsResponse.Text);
+
+   dataResp := _jsonFast(tsResponse.Text);
+
+   if dataResp._count > 0 then
+   begin
+   try
+   for I := 0 to dataResp._count - 1 do
+     begin
+       dId := dataResp.Value(i).id;
+//       ShowMessage('id : ' + dId);
+       dNik := dataResp.Value(i).nik;
+//       ShowMessage('nik : ' + dNik);
+
+       dToken := dataResp.Value(i).token;
+//       ShowMessage('token : ' + dToken);
+
+       sql1 := Format(sql0, [
+            QuotedStr(dId),
+            IntToStr(puskesmas),
+            QuotedStr(strTgl),
+            QuotedStr(dNik),
+            QuotedStr(dToken)
+            ]);
+       tSl.Add(sql1);
+//       showMessage(sqlDel1);
+//       showMessage(sql1);
+     end;
+   finally
+      aScript.Assign(tSl);
+     jalankanScript(tSl);
+     FreeAndNil(tSl);
+   end;
+end;
+end;
+
+procedure srvAntri.masukkanPostAntri(id: string);
+var
+  V1 : Variant;
+  dariServer : string;
+  sql0, sql1 : string;
+  tSL : TStringList;
+begin
+  //ShowMessage(tsResponse.Text);
+  V1 := _Json(tsResponse.Text);
+
+  dariServer := V1.dariServer;
+  sql0 := 'update simpus.antri set dari_server = %s where id = %s;';
+  sql1 := Format(sql0,[
+            QuotedStr(dariServer),
+            QuotedStr(id)
+            ]);
+  tSL := TStringList.Create;
+  try
+    tSL.Add(sql1);
+    jalankanScript(tSL);
+  finally
+    tSL.Free;
+  end;
+
+end;
+
+procedure srvAntri.masukkanPostAntriFcm(id: string);
+var
+  V1 : Variant;
+  dariServer : string;
+  sql0, sql1 : string;
+  tSL : TStringList;
+begin
+  //ShowMessage(tsResponse.Text);
+//  V1 := _Json(tsResponse.Text);
+
+  sql0 := 'update simpus.antri set fcm = true where id = %s;';
+  sql1 := Format(sql0,[
+            QuotedStr(id)
+            ]);
+  tSL := TStringList.Create;
+  try
+    tSL.Add(sql1);
+    jalankanScript(tSL);
+  finally
+    tSL.Free;
+  end;
+
+end;
+
+function srvAntri.postAntri(puskesmas : Integer; tanggal : TDateTime): Boolean;
+var
+    mStream : TMemoryStream;
+    js, jsX, id, Uri0 : string;
+    V0, V1 : Variant;
+    i : Integer;
+begin
+Result := False;
+
+js := ambilJsonAntriPost(puskesmas, tanggal);
+if Length(js) > 20 then
+begin
+  V0 := _Json(js);
+  if V0._count > 0 then
+  begin
+    for I := 0 to V0._count - 1 do
+      begin
+        Result := False;
+        VarClear(V1);
+        V1 := V0.Value(i);
+        _Unique(V1);
+        id := V1.id;
+        Uri0 := ReplaceStr(Uri, '{id}', id);
+        //V1.token := Uri0;
+        jsX := VariantSaveJSON(V1);
+        mStream := TMemoryStream.Create;
+        WriteStrToStream(mStream, jsX);
+
+        Result:= httpPost(Uri0, mStream);
+       // FileFromString(jsX, 'jsX' + IntToStr(i) + '.json');
+        mStream.Free;
+
+        if Result then jika_berhasil('simpus.antri', id) else
+                 jika_gagal('post', Uri0, jsX, 'simpus.antri', id);
+
+        if Result then masukkanPostAntri(id);
+
+      end;
+  end;
+end;
+end;
+
+function srvAntri.postAntriFcm(puskesmas : Integer; tanggal : TDateTime; logOnly : Boolean): Boolean;
+var
+    mStream : TMemoryStream;
+    js, jsX, id : string;
+    V0, V1 : Variant;
+    i : Integer;
+begin
+Result := False;
+
+js := ambilJsonAntriFcmPost(puskesmas, tanggal);
+if Length(js) > 10 then
+begin
+  V0 := _Json(js);
+  if V0._count > 0 then
+  begin
+    for I := 0 to V0._count - 1 do
+    begin
+      Result := False;
+      VarClear(V1);
+      V1 := V0.Value(i);
+      _Unique(V1);
+      id := V1.id;
+      jsX := VariantSaveJSON(V1);
+      mStream := TMemoryStream.Create;
+      WriteStrToStream(mStream, jsX);
+
+      //Uri := ReplaceStr(Uri, '{id}', id);
+      if not logOnly then  Result:= httpPost(Uri, mStream);
+
+      FormatJson := jsX;
+      mStream.Free;
+      //FileFromString(jsX, 'jsX' + IntToStr(i) + '.json');
+
+
+      if Result then jika_berhasil('andro.antri_fcm_view', id) else
+           jika_gagal('post', Uri, jsX, 'andro.antri_fcm_view', id);
+
+      if Result then masukkanPostAntriFcm(id);
+
+    end;
+  end;
+end;
+end;
+
+function srvAntri.postAntriTopik(puskesmas: Integer; tanggal: TDateTime;
+  logOnly: Boolean): Boolean;
+var
+    mStream : TMemoryStream;
+    js : string;
+begin
+Result := False;
+
+js := ambilJsonAntriTopikPost(puskesmas, tanggal);
+if Length(js) > 10 then
+begin
+mStream := TMemoryStream.Create;
+WriteStrToStream(mStream, js);
+
+//Uri := ReplaceStr(Uri, '{id}', id);
+if not logOnly then  Result:= httpPost(Uri, mStream);
+
+FormatJson := js;
+mStream.Free;
+{
+// tidak perlu diulang
+if Result then jika_berhasil('simpus.antri_view', ) else
+         jika_gagal('post', Uri, js, 'andro.antri_fcm_view', id);
+}
+//if Result then masukkanPostAntriFcm(id);
+
+end;
+end;
+
+end.
